@@ -15,6 +15,13 @@ RUN apt-get update \
     && apt-get install -y greenplum-db-6 \
     && apt-get install -y less vim sudo openssh-server locales iputils-ping dnsutils curl gawk
 
+# Install OpenJDK-11
+RUN apt-get update && \
+    apt-get install -y openjdk-11-jdk ca-certificates-java && \
+    apt-get clean && \
+    update-ca-certificates -f
+ENV JAVA_HOME /usr/lib/jvm/java-11-openjdk-amd64/
+
 RUN curl -fsSL https://get.docker.com | bash
 
 RUN GPVERSION=$(ls /opt/ | grep -i "greenplum-db" | sed 's/greenplum-db-//g') \
@@ -62,7 +69,6 @@ RUN chown -R gpadmin:gpadmin /var/lib/gpdb
 ADD docker-entrypoint.sh /usr/local/bin/
 RUN chmod 755 /usr/local/bin/docker-entrypoint.sh
 
-
 USER gpadmin
 
 ENV USER=gpadmin
@@ -81,6 +87,16 @@ ENV GP_NODE=master
 ENV HOSTFILE=singlehost
 
 VOLUME /var/lib/gpdb/data
+
+ADD pxf-gp6-6.5.0-2-ubuntu18.04-amd64.deb .
+RUN sudo dpkg --install ./pxf-gp6-6.5.0-2-ubuntu18.04-amd64.deb
+RUN sudo chown -R gpadmin:gpadmin /usr/local/pxf-gp*
+ENV PXF_BASE=/usr/local/pxf-gp6
+ENV PATH=$PATH:${PXF_BASE}/bin
+RUN rm -f ./pxf-gp6-6.5.0-2-ubuntu18.04-amd64.deb
+RUN sudo chown -R gpadmin:gpadmin /opt/greenplum-db-6*/share/postgresql/extension/
+ADD clickhouse-jdbc-0.4.0-all.jar $PXF_BASE/lib
+
 ENTRYPOINT ["docker-entrypoint.sh"]
 EXPOSE 5432
 

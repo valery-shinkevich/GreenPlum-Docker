@@ -84,4 +84,7 @@ else
     echo 'Node type='$GP_NODE
     echo "Ready."
 fi
+
+pxf cluster register
+
 exec "$@"
